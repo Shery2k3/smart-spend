@@ -22,22 +22,61 @@
   font-weight: 600 !important;
 }
 
-.loginButton {
-  margin-bottom: 24px;
-  height: 45px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: none;
-  transition: transform 0.2s ease;
-}
-
-.loginButton:hover {
-  transform: translateY(-2px);
-}
-
 .textSecondary {
   display: block;
   text-align: center;
   margin-bottom: 24px;
   opacity: 0.7;
+}
+
+.submitButton {
+  margin-top: 8px;
+  height: 45px;
+  font-size: 16px;
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+}
+
+.googleButton {
+  margin-bottom: 24px;
+  height: 45px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  transition: transform 0.2s ease;
+}
+
+.googleButton:hover {
+  transform: translateY(-2px);
+  border-color: #4096ff;
+  color: #4096ff;
+}
+
+.toggleText {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.toggleText a {
+  color: #1677ff;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.toggleText a:hover {
+  color: #4096ff;
+}
+
+.iconColor {
+  color: #bfbfbf;
+}
+
+.divider {
+  margin: 24px 0;
+  color: #bfbfbf;
+  font-size: 14px;
 }

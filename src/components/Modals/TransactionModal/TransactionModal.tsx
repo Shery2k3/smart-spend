@@ -234,7 +234,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     } catch (error) {
       console.error("Error creating/updating transaction:", error);
       message.error(
-        error instanceof Error ? error.message : "An error occurred"
+        error instanceof Error ? error.message : "An error occurred",
       );
     } finally {
       setLoading(false);
@@ -364,23 +364,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             </Form.Item>
           </Space.Compact>
 
-          {transactionType === "expense" ||
-            (transactionType === "debt" && debtType === "taken" && (
-              <Form.Item
-                label="Category"
-                name="category"
-                rules={[{ required: true, message: "Please select category" }]}
-              >
-                <Select
-                  options={categories}
-                  placeholder="Select Category"
-                  loading={categories.length === 0}
-                  notFoundContent={
-                    <EmptyState description="No categories found" />
-                  }
-                />
-              </Form.Item>
-            ))}
+          {!!(transactionType === "expense" ||
+            (transactionType === "debt" && debtType === "taken")) && (
+            <Form.Item
+              label="Category"
+              name="category"
+              rules={[{ required: true, message: "Please select category" }]}
+            >
+              <Select
+                options={categories}
+                placeholder="Select Category"
+                loading={categories.length === 0}
+                notFoundContent={
+                  <EmptyState description="No categories found" />
+                }
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             label={transactionType === "debt" ? "Reason" : "Notes"}

@@ -8,9 +8,11 @@ import {
   Button,
   InputNumber,
   ColorPicker,
-  message,
 } from "antd";
 import { useEffect, useState } from "react";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
+import { useCreateCategory, useUpdateCategory } from '@/hooks/useApi';
 
 interface CategoryModalProps {
   isEdit?: boolean;
@@ -30,9 +32,13 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   onClick,
   onSuccess,
 }) => {
+  const { currency } = useCurrency();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const loading = createCategory.isPending || updateCategory.isPending;
 
   useEffect(() => {
     if (initialValues && isModalOpen) {
@@ -60,48 +66,27 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     budget: number;
     color: string | { toHexString: () => string };
   }) => {
-    try {
-      setLoading(true);
-      const url = "/api/category";
-      const method = isEdit ? "PUT" : "POST";
+    const formattedValues = {
+      ...values,
+      categoryName: capitalizeString(values.categoryName),
+      color:
+        typeof values.color === "string"
+          ? values.color
+          : values.color.toHexString(),
+    };
 
-      const formattedValues = {
-        ...values,
-        categoryName: capitalizeString(values.categoryName),
-        color:
-          typeof values.color === "string"
-            ? values.color
-            : values.color.toHexString(),
-      };
-
-      const body = isEdit
-        ? { ...formattedValues, _id: initialValues?._id }
-        : formattedValues;
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+    if (isEdit && initialValues?._id) {
+      await updateCategory.mutateAsync({
+        _id: initialValues._id,
+        ...formattedValues,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save category");
-      }
-
-      message.success(
-        `Category ${isEdit ? "updated" : "created"} successfully`
-      );
-      form.resetFields();
-      setIsModalOpen(false);
-      onSuccess?.();
-    } catch (error) {
-      console.error("Error saving category:", error);
-      message.error("Failed to save category");
-    } finally {
-      setLoading(false);
+    } else {
+      await createCategory.mutateAsync(formattedValues);
     }
+
+    form.resetFields();
+    setIsModalOpen(false);
+    onSuccess?.();
   };
 
   return (
@@ -156,7 +141,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
             initialValue={0}
             rules={[{ required: true, message: "Please enter amount" }]}
           >
-            <InputNumber prefix="Rs." style={{ width: "100%" }} min={0} />
+            <InputNumber prefix={getCurrencySymbol(currency)} style={{ width: "100%" }} min={0} />
           </Form.Item>
           <Form.Item
             label="Color"

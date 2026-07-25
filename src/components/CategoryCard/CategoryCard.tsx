@@ -1,6 +1,8 @@
 import { Card, Progress, Space } from "antd";
 import CategoryModal from "../Modals/CategoryModal/CategoryModal";
 import DeleteCategoryButton from "../Modals/DeleteCategoryModal/DeleteCategoryModal";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
 
 interface CategoryCardProps {
   id: string;
@@ -21,6 +23,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   color,
   onSuccess,
 }) => {
+  const { currency } = useCurrency();
   const spendPercentage = (totalSpend / budget) * 100;
 
   return (
@@ -57,8 +60,8 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         direction="vertical"
         style={{ width: "100%", marginBottom: "1rem" }}
       >
-        <p>Total Spend: Rs.{totalSpend?.toFixed(2) || 0}</p>
-        <p>Budget: Rs.{budget?.toFixed(2) || 0}</p>
+        <p>Total Spend: {getCurrencySymbol(currency)}{totalSpend?.toFixed(2) || 0}</p>
+        <p>Budget: {getCurrencySymbol(currency)}{budget?.toFixed(2) || 0}</p>
         <Progress
           percent={parseFloat(spendPercentage.toFixed(2))}
           status={spendPercentage >= 100 ? "exception" : "normal"}

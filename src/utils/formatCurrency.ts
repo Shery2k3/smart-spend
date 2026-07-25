@@ -1,3 +1,21 @@
+// Currency symbols mapping
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  INR: "₹",
+  PKR: "Rs.",
+  AUD: "A$",
+  CAD: "C$",
+  CNY: "¥",
+  BRL: "R$",
+};
+
+export const getCurrencySymbol = (currency: string): string => {
+  return currencySymbols[currency] || currency;
+};
+
 export const formatNumber = (num: number): string => {
   const absNum = Math.abs(num);
   let formatted: string;

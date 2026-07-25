@@ -13,6 +13,8 @@ import { useSession } from "next-auth/react";
 import { pdf } from "@react-pdf/renderer";
 import DebtReport from "@/components/PDFTemplates/DebtReport";
 import DebtPaymentButton from "../DebtPaymentModal.tsx/DebtPaymentModal";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
 
 const { Text, Title } = Typography;
 
@@ -41,6 +43,7 @@ interface DebtDetailProps {
 }
 
 const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
+  const { currency } = useCurrency();
   const [pdfLoading, setPdfLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { data: session } = useSession();
@@ -57,7 +60,7 @@ const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
     try {
       setPdfLoading(true);
       const blob = await pdf(
-        <DebtReport record={record} session={session} />
+        <DebtReport record={record} session={session} currency={currency} />
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
@@ -82,7 +85,7 @@ const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
   );
 
   const getTransactionDescription = (transaction: DebtTransaction, record: DebtDetailProps['record'], userName?: string) => {
-    const amount = `Rs.${transaction.amount.toFixed(2)}`;
+    const amount = `${getCurrencySymbol(currency)}${transaction.amount.toFixed(2)}`;
     const reasonText = transaction.reason ? ` for ${transaction.reason}` : '';
     
     if (record.debtType === "given") {
@@ -131,7 +134,7 @@ const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
                 labelStyle={{ fontWeight: "bold" }}
               >
                 <Text style={{ color: "#FF9D00" }} strong>
-                  Rs.{record.totalAmount.toFixed(2)}
+                  {getCurrencySymbol(currency)}{record.totalAmount.toFixed(2)}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item
@@ -139,7 +142,7 @@ const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
                 labelStyle={{ fontWeight: "bold" }}
               >
                 <Text style={{ color: "#CDF345" }} strong>
-                  Rs.{record.amountPaid.toFixed(2)}
+                  {getCurrencySymbol(currency)}{record.amountPaid.toFixed(2)}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item
@@ -147,7 +150,7 @@ const DebtDetailDrawer: React.FC<DebtDetailProps> = ({ record, onRefresh }) => {
                 labelStyle={{ fontWeight: "bold" }}
               >
                 <Text style={{ color: "#F34545" }} strong>
-                  Rs.{record.amountRemaining.toFixed(2)}
+                  {getCurrencySymbol(currency)}{record.amountRemaining.toFixed(2)}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item

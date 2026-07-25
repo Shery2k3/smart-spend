@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
 import RecentTransactionCard from "./RecentTransactionCard";
 import NoTransactions from "../HelperComponents/NoTransactions";
 import LoadingSkeleton from "../HelperComponents/LoadingSkeleton";
+import { useTransactions } from "@/hooks/useApi";
 
 interface TransactionData {
   _id: string;
@@ -15,28 +15,9 @@ interface TransactionData {
 }
 
 const RecentTransaction = () => {
-  const [transactions, setTransactions] = useState<TransactionData[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading } = useTransactions(1, 7);
 
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/transactions?page=1&pageSize=7");
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
-      }
-      const data = await response.json();
-      setTransactions(data.transactions);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  const transactions = data?.transactions || [];
 
   return (
     <div style={{ padding: 16 }}>
@@ -49,7 +30,7 @@ const RecentTransaction = () => {
         <h2 style={{ textAlign: "center" }}>Recent Transactions</h2>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {loading ? (
+        {isLoading ? (
           <>
             <LoadingSkeleton type="transaction" quantity={4} />
           </>
@@ -62,7 +43,7 @@ const RecentTransaction = () => {
               _id={transaction._id}
               title={transaction.title}
               date={transaction.date}
-              type={transaction.type}
+              type={transaction.type as "income" | "expense"}
               amount={transaction.amount}
               category={transaction.category}
               notes={transaction.notes}

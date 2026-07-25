@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/app/lib/dbConnect';
 import Debt from '@/app/models/Debt';
+import Transaction from '@/app/models/Transaction';
+import Category from '@/app/models/Category';
 import { Types } from 'mongoose';
 
 interface RouteParams {
@@ -92,6 +94,65 @@ export async function PUT(request: Request, { params }: RouteParams) {
         { error: 'Return amount cannot exceed remaining amount' }, 
         { status: 400 }
       );
+    }
+
+    // Update the linked Transaction if it exists
+    if (existingTransaction.transactionId) {
+      const oldTransactionType = debt.debtType === 'taken' 
+        ? (oldType === 'add' ? 'income' : 'expense')
+        : (oldType === 'add' ? 'expense' : 'income');
+      
+      const newTransactionType = debt.debtType === 'taken'
+        ? (newType === 'add' ? 'income' : 'expense')
+        : (newType === 'add' ? 'expense' : 'income');
+
+      const oldCategory = existingTransaction.category;
+      const newCategory = category ?? oldCategory;
+
+      // If category changed and old was expense, reverse old category stats
+      if (oldTransactionType === 'expense' && oldCategory && 
+          (newCategory !== oldCategory || newTransactionType !== oldTransactionType || newAmount !== oldAmount)) {
+        await Category.findOneAndUpdate(
+          { 
+            userId: session.user.userId,
+            categoryName: oldCategory 
+          },
+          { 
+            $inc: { 
+              totalSpend: -oldAmount,
+              transactionCount: -1
+            } 
+          }
+        );
+      }
+
+      // Update the Transaction
+      await Transaction.findByIdAndUpdate(
+        existingTransaction.transactionId,
+        {
+          type: newTransactionType,
+          amount: newAmount,
+          date: date ?? existingTransaction.date,
+          category: newCategory,
+          notes: notes ?? existingTransaction.notes
+        }
+      );
+
+      // If new transaction is expense, update category stats
+      if (newTransactionType === 'expense' && newCategory) {
+        await Category.findOneAndUpdate(
+          { 
+            userId: session.user.userId,
+            categoryName: newCategory 
+          },
+          { 
+            $inc: { 
+              totalSpend: newAmount,
+              transactionCount: 1
+            } 
+          }
+        );
+      }
     }
 
     // Update the transaction in the array
@@ -185,6 +246,32 @@ export async function DELETE(request: Request, { params }: RouteParams) {
         { error: 'Transaction not found' }, 
         { status: 404 }
       );
+    }
+
+    // Delete the linked Transaction if it exists
+    if (transactionToDelete.transactionId) {
+      const linkedTransaction = await Transaction.findById(transactionToDelete.transactionId);
+      
+      if (linkedTransaction) {
+        // Update category if it was an expense
+        if (linkedTransaction.type === 'expense' && linkedTransaction.category) {
+          await Category.findOneAndUpdate(
+            { 
+              userId: session.user.userId,
+              categoryName: linkedTransaction.category 
+            },
+            { 
+              $inc: { 
+                totalSpend: -linkedTransaction.amount,
+                transactionCount: -1
+              } 
+            }
+          );
+        }
+        
+        // Delete the transaction
+        await Transaction.findByIdAndDelete(transactionToDelete.transactionId);
+      }
     }
 
     // Calculate the reversal amounts

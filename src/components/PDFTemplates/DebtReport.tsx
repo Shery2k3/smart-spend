@@ -1,6 +1,7 @@
 // src/components/PDFTemplates/DebtReport.tsx
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import dayjs from "dayjs";
+import { getCurrencySymbol } from '@/utils/formatCurrency';
 
 const styles = StyleSheet.create({
   page: {
@@ -78,8 +79,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const getTransactionDescription = (transaction: any, record: any, userName?: string) => {
-  const amount = `Rs.${transaction.amount.toFixed(2)}`;
+const getTransactionDescription = (transaction: any, record: any, userName?: string, currency?: string) => {
+  const amount = `${getCurrencySymbol(currency || 'USD')}${transaction.amount.toFixed(2)}`;
   const reasonText = transaction.reason ? ` for ${transaction.reason}` : '';
   
   if (record.debtType === "given") {
@@ -93,7 +94,7 @@ const getTransactionDescription = (transaction: any, record: any, userName?: str
   }
 };
 
-const DebtReport = ({ record, session }: { record: any; session: any }) => (
+const DebtReport = ({ record, session, currency }: { record: any; session: any; currency?: string }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
@@ -105,18 +106,18 @@ const DebtReport = ({ record, session }: { record: any; session: any }) => (
         <View style={styles.description}>
           <View style={styles.row}>
             <Text style={styles.label}>Total Amount</Text>
-            <Text style={styles.value}>Rs.{record.totalAmount.toFixed(2)}</Text>
+            <Text style={styles.value}>{getCurrencySymbol(currency || 'USD')}{record.totalAmount.toFixed(2)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Amount Paid</Text>
-            <Text style={styles.value}>Rs.{record.amountPaid.toFixed(2)}</Text>
+            <Text style={styles.value}>{getCurrencySymbol(currency || 'USD')}{record.amountPaid.toFixed(2)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Status</Text>
             <Text style={styles.value}>
               {record.debtType === "given"
                 ? `${record.title} owes`
-                : `${session?.user?.name} owes`} Rs.{record.amountRemaining.toFixed(2)}
+                : `${session?.user?.name} owes`} {getCurrencySymbol(currency || 'USD')}{record.amountRemaining.toFixed(2)}
             </Text>
           </View>
           <View style={styles.lastRow}>
@@ -145,7 +146,7 @@ const DebtReport = ({ record, session }: { record: any; session: any }) => (
           {record.transactions.map((transaction: any, index: number) => (
             <View key={index} style={styles.transaction}>
               <Text style={styles.transactionText}>
-                {getTransactionDescription(transaction, record, session?.user?.name)}
+                {getTransactionDescription(transaction, record, session?.user?.name, currency)}
               </Text>
               <Text style={styles.transactionDate}>
                 {dayjs(transaction.date).format("DD MMM YYYY, hh:mm A")}

@@ -13,6 +13,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import DebtDeleteButton from "../Modals/DebtDeleteModal/DebtDeleteModal";
 import DebtPaymentButton from "../Modals/DebtPaymentModal.tsx/DebtPaymentModal";
 import DebtDetailDrawer from "../Modals/DebtDetailDrawer.tsx/DebtDetailDrawer";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
 
 // Initialize the relative time plugin
 dayjs.extend(relativeTime);
@@ -52,6 +54,7 @@ const DebtCard: React.FC<DebtCardProps> = ({
   transactions,
   onRefresh,
 }) => {
+  const { currency } = useCurrency();
   const progressPercentage = parseFloat(
     ((amountPaid / totalAmount) * 100).toFixed(1)
   );
@@ -59,7 +62,7 @@ const DebtCard: React.FC<DebtCardProps> = ({
     <Card
       title={
         <div>
-          <Text strong>{`${title} (Rs.${amountRemaining})`}</Text>
+          <Text strong>{`${title} (${getCurrencySymbol(currency)}${amountRemaining})`}</Text>
 
           <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
             <ClockCircleOutlined style={{ fontSize: "10px", opacity: 0.7 }} />
@@ -160,14 +163,14 @@ const DebtCard: React.FC<DebtCardProps> = ({
           direction="vertical"
           style={{ width: "100%", marginBottom: "1rem" }}
         >
-          <p>Total Debt: Rs.{totalAmount}</p>
-          <p>Amount Paid: Rs.{amountPaid}</p>
+          <p>Total Debt: {getCurrencySymbol(currency)}{totalAmount}</p>
+          <p>Amount Paid: {getCurrencySymbol(currency)}{amountPaid}</p>
           <Progress
             percent={progressPercentage}
             status={progressPercentage >= 100 ? "success" : "active"}
             strokeColor={"#CDF345"}
           />
-          <p>Amount Remaining: Rs.{amountRemaining}</p>
+          <p>Amount Remaining: {getCurrencySymbol(currency)}{amountRemaining}</p>
         </Space>
       </div>
     </Card>

@@ -18,13 +18,26 @@ export async function PUT(request: Request) {
   await dbConnect();
   try {
     const body = await request.json();
+    const { userId, name, currency, monthlyBudget } = body;
+
     const updatedUser = await User.findOneAndUpdate(
-      { userId: body.userId },
-      body,
-      { new: true }
+      { userId },
+      { 
+        $set: {
+          name, 
+          currency, 
+          monthlyBudget: Number(monthlyBudget)
+        }
+      },
+      { 
+        new: true,
+        runValidators: true,
+        strict: false
+      }
     );
     return NextResponse.json(updatedUser);
   } catch (err) {
+    console.error('Update error:', err);
     return NextResponse.json({ error: 'Failed to update user', err }, { status: 400 });
   }
 }

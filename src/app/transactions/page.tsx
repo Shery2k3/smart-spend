@@ -15,7 +15,7 @@ export default function Transactions() {
           >
             <h2 style={{ textAlign: "center" }}>Transaction History</h2>
           </div>
-          <StatementModal />
+          {/* <StatementModal /> */}
           <TransactionsTable />
         </MainLayout>
       </div>

@@ -14,6 +14,7 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import StatementPDF from "../../PDFTemplates/StatementPDF";
+import { useMutation } from "@tanstack/react-query";
 
 const { RangePicker } = DatePicker;
 
@@ -22,12 +23,33 @@ interface StatementModalProps {
 }
 
 const StatementModal: React.FC<StatementModalProps> = () => {
-  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statementType, setStatementType] = useState("monthly");
   const [form] = Form.useForm();
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [statementData, setStatementData] = useState<any>(null);
+
+  const fetchStatement = useMutation({
+    mutationFn: async (queryParams: URLSearchParams) => {
+      const response = await fetch(
+        `/api/transactions/statement?${queryParams}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch statement data");
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      setStatementData({
+        data,
+        name: form.getFieldValue("name"),
+      });
+      handleCancel();
+      setIsDownloadModalOpen(true);
+    },
+    onError: (error) => {
+      console.error("Error generating statement:", error);
+      message.error("Failed to generate statement");
+    },
+  });
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -40,44 +62,23 @@ const StatementModal: React.FC<StatementModalProps> = () => {
   };
 
   const handleSubmit = async (values: any) => {
-    try {
-      setLoading(true);
-      const queryParams = new URLSearchParams();
-      queryParams.append("type", values.type);
+    const queryParams = new URLSearchParams();
+    queryParams.append("type", values.type);
 
-      if (values.type === "monthly") {
-        queryParams.append("month", values.month);
-        queryParams.append("year", values.year.toString());
-      } else if (values.type === "yearly") {
-        queryParams.append("year", values.year.toString());
-      } else if (values.type === "range") {
-        queryParams.append(
-          "startDate",
-          values.dateRange[0].format("YYYY-MM-DD")
-        );
-        queryParams.append("endDate", values.dateRange[1].format("YYYY-MM-DD"));
-      }
-
-      const response = await fetch(
-        `/api/transactions/statement?${queryParams}`
+    if (values.type === "monthly") {
+      queryParams.append("month", values.month);
+      queryParams.append("year", values.year.toString());
+    } else if (values.type === "yearly") {
+      queryParams.append("year", values.year.toString());
+    } else if (values.type === "range") {
+      queryParams.append(
+        "startDate",
+        values.dateRange[0].format("YYYY-MM-DD")
       );
-      if (!response.ok) throw new Error("Failed to fetch statement data");
-
-      const data = await response.json();
-
-      // Store the data and show download modal
-      setStatementData({
-        data,
-        name: values.name,
-      });
-      handleCancel(); // Close the main modal
-      setIsDownloadModalOpen(true);
-    } catch (error) {
-      console.error("Error generating statement:", error);
-      message.error("Failed to generate statement");
-    } finally {
-      setLoading(false);
+      queryParams.append("endDate", values.dateRange[1].format("YYYY-MM-DD"));
     }
+
+    fetchStatement.mutate(queryParams);
   };
 
   const handleTypeChange = (value: string) => {
@@ -194,12 +195,12 @@ const StatementModal: React.FC<StatementModalProps> = () => {
           >
             <Button
               style={{ marginRight: 8 }}
-              loading={loading}
+              loading={fetchStatement.isPending}
               onClick={handleCancel}
             >
               Cancel
             </Button>
-            <Button type="primary" loading={loading} htmlType="submit">
+            <Button type="primary" loading={fetchStatement.isPending} htmlType="submit">
               Generate
             </Button>
           </Form.Item>

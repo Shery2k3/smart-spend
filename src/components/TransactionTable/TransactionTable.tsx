@@ -1,12 +1,12 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Segmented, Card, Skeleton, Pagination } from "antd";
+import React, { useState } from "react";
+import { Segmented, Pagination } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import TransactionModal from "../Modals/TransactionModal/TransactionModal";
 import RecentTransactionCard from "../RecentTransaction/RecentTransactionCard";
 import NoTransactions from "../HelperComponents/NoTransactions";
 import LoadingSkeleton from "../HelperComponents/LoadingSkeleton";
+import { useTransactions } from "@/hooks/useApi";
 
 dayjs.extend(customParseFormat);
 
@@ -28,59 +28,23 @@ interface PaginationState {
 
 const TransactionsTable = () => {
   const [filter, setFilter] = useState<"All" | "Income" | "Expense">("All");
-  const [loading, setLoading] = useState(false);
-  const [transactions, setTransactions] = useState<TransactionData[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    current: 1,
-    pageSize: 10,
-    total: 10,
-  });
+  const { data, isLoading } = useTransactions(page, pageSize, filter);
 
-  const fetchTransactions = async () => {
-    try {
-      let url = `/api/transactions?page=${pagination.current}&pageSize=${pagination.pageSize}`;
-
-      if (filter !== "All") {
-        url += `&type=${filter.toLowerCase()}`;
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
-      }
-      const data = await response.json();
-      setTransactions(data.transactions);
-      setPagination((prev) => ({
-        ...prev,
-        total: data.pagination.total,
-      }));
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(true);
-      fetchTransactions();
-    }, 1);
-
-    return () => clearTimeout(timer);
-  }, [filter, pagination.current, pagination.pageSize]);
+  const transactions = data?.transactions || [];
+  const total = data?.pagination?.total || 0;
 
   const handleFilterChange = (value: "All" | "Income" | "Expense") => {
     setFilter(value);
   };
 
-  const handlePageChange = (page: number, pageSize?: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      current: page,
-      pageSize: pageSize || prev.pageSize,
-    }));
+  const handlePageChange = (newPage: number, newPageSize?: number) => {
+    setPage(newPage);
+    if (newPageSize) {
+      setPageSize(newPageSize);
+    }
   };
 
   return (
@@ -92,9 +56,8 @@ const TransactionsTable = () => {
         style={{ marginBottom: 16 }}
         block
       />
-      <TransactionModal onClose={fetchTransactions} />
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {loading ? (
+        {isLoading ? (
           <>
           <LoadingSkeleton type="transaction" quantity={4} />
         </>
@@ -108,7 +71,7 @@ const TransactionsTable = () => {
                 _id={transaction._id}
                 title={transaction.title}
                 date={transaction.date}
-                type={transaction.type}
+                type={transaction.type as "income" | "expense"}
                 amount={transaction.amount}
                 category={transaction.category}
                 notes={transaction.notes}
@@ -122,9 +85,9 @@ const TransactionsTable = () => {
               }}
             >
               <Pagination
-                current={pagination.current}
-                total={pagination.total}
-                pageSize={pagination.pageSize}
+                current={page}
+                total={total}
+                pageSize={pageSize}
                 onChange={handlePageChange}
                 showSizeChanger={false}
               />

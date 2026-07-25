@@ -1,7 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { Modal, message } from "antd"; // Add message from antd
+import { Modal } from "antd";
 import dayjs from "dayjs";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
+import { useDeleteTransaction } from '@/hooks/useApi';
 
 interface TransactionData {
   _id: string;
@@ -22,35 +25,20 @@ const DeleteTransactionButton: React.FC<DeleteTransactionButtonProps> = ({
   record,
   onClose,
 }) => {
+  const { currency } = useCurrency();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const deleteTransaction = useDeleteTransaction();
 
   const handleDelete = () => {
     setDeleteModalVisible(true);
   };
 
   const confirmDelete = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/transactions?id=${record._id}`, {
-        method: "DELETE",
-      });
+    await deleteTransaction.mutateAsync(record._id);
+    setDeleteModalVisible(false);
 
-      if (!response.ok) {
-        throw new Error("Failed to delete transaction");
-      }
-
-      message.success("Transaction deleted successfully");
-      setDeleteModalVisible(false);
-
-      if (onClose) {
-        onClose();
-      }
-    } catch (error) {
-      console.error("Error deleting transaction:", error);
-      message.error("Failed to delete transaction");
-    } finally {
-      setLoading(false);
+    if (onClose) {
+      onClose();
     }
   };
 
@@ -67,7 +55,7 @@ const DeleteTransactionButton: React.FC<DeleteTransactionButtonProps> = ({
         onCancel={() => setDeleteModalVisible(false)}
         okText="Delete"
         cancelText="Cancel"
-        okButtonProps={{ danger: true, loading: loading }}
+        okButtonProps={{ danger: true, loading: deleteTransaction.isPending }}
         width={400}
         centered
       >
@@ -77,7 +65,7 @@ const DeleteTransactionButton: React.FC<DeleteTransactionButtonProps> = ({
             <strong>Title:</strong> {record.title}
           </p>
           <p>
-            <strong>Amount:</strong> Rs.{record.amount.toFixed(2)}
+            <strong>Amount:</strong> {getCurrencySymbol(currency)}{record.amount.toFixed(2)}
           </p>
           <p>
             <strong>Date:</strong>{" "}

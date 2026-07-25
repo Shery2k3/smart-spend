@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/app/lib/dbConnect';
 import Debt from '@/app/models/Debt';
+import Category from '@/app/models/Category';
+import Transaction from '@/app/models/Transaction';
 
 // GET - Fetch all debts for the user
 export async function GET(request: Request) {
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    const { title, totalAmount, debtType, category, date, notes } = body;
+    const { title, totalAmount, debtType, date, notes } = body;
 
     if (!title || !totalAmount || !debtType || !date) {
       return NextResponse.json(
@@ -83,13 +85,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create initial transaction for the debt creation
+    // Create a transaction in the Transaction collection
+    const transactionType = 'expense';
+    const transaction = await Transaction.create({
+      userId: session.user.userId,
+      title: notes || title,
+      type: transactionType,
+      amount: totalAmount,
+      date: date,
+      category: body.category,
+      notes: notes || 'Initial debt creation'
+    });
+
+    // Update category if it's an expense
+    if (transactionType === 'expense' && body.category) {
+      await Category.findOneAndUpdate(
+        { 
+          userId: session.user.userId,
+          categoryName: body.category 
+        },
+        { 
+          $inc: { 
+            totalSpend: totalAmount,
+            transactionCount: 1
+          } 
+        }
+      );
+    }
+
+    // Create initial transaction for the debt with reference to Transaction
     const initialTransaction = {
       type: 'add' as const,
       amount: totalAmount,
       date: date,
-      category: category,
-      reason: notes || 'Initial debt creation'
+      category: body.category,
+      reason: notes || 'Initial debt creation',
+      transactionId: transaction._id.toString()
     };
 
     const debt = await Debt.create({
@@ -202,7 +233,7 @@ export async function DELETE(request: Request) {
     }
 
     // Find and verify ownership before deleting
-    const debt = await Debt.findOneAndDelete({
+    const debt = await Debt.findOne({
       _id: debtId,
       userId: session.user.userId
     });
@@ -213,6 +244,37 @@ export async function DELETE(request: Request) {
         { status: 404 }
       );
     }
+
+    // Delete all linked transactions from Transaction collection
+    for (const debtTransaction of debt.transactions) {
+      if (debtTransaction.transactionId) {
+        const linkedTransaction = await Transaction.findById(debtTransaction.transactionId);
+        
+        if (linkedTransaction) {
+          // Reverse category totals if it was an expense
+          if (linkedTransaction.type === 'expense' && linkedTransaction.category) {
+            await Category.findOneAndUpdate(
+              { 
+                userId: session.user.userId,
+                categoryName: linkedTransaction.category 
+              },
+              { 
+                $inc: { 
+                  totalSpend: -linkedTransaction.amount,
+                  transactionCount: -1
+                } 
+              }
+            );
+          }
+          
+          // Delete the transaction
+          await Transaction.findByIdAndDelete(debtTransaction.transactionId);
+        }
+      }
+    }
+
+    // Now delete the debt
+    await Debt.findByIdAndDelete(debtId);
 
     return NextResponse.json({ 
       message: 'Debt deleted successfully',

@@ -7,7 +7,9 @@ import {
   BankOutlined,
 } from "@ant-design/icons";
 import CountUp from "react-countup";
-import { useEffect, useState } from "react";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
+import { useMonthlyStats } from '@/hooks/useApi';
 
 interface StatsData {
   currentBalance: number;
@@ -17,34 +19,15 @@ interface StatsData {
 }
 
 const Stats: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<StatsData>({
+  const { currency } = useCurrency();
+  const { data: stats, isLoading: loading } = useMonthlyStats();
+
+  const statsData = stats || {
     currentBalance: 0,
     monthlyIncome: 0,
     monthlyExpenses: 0,
     budgetUtilization: 0,
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch("/api/analytics/monthly-stats");
-        if (!response.ok) {
-          throw new Error("Failed to fetch stats");
-        }
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 300);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  };
 
   return (
     <div style={{ padding: "0 16px", marginBottom: "8px" }}>
@@ -62,9 +45,9 @@ const Stats: React.FC = () => {
                 Current Balance
               </div>
               <div style={{ color: "#cdf345", fontSize: "24px" }}>
-                <WalletOutlined style={{ marginRight: "5px" }} /> Rs.
+                <WalletOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
                 <CountUp
-                  end={stats.currentBalance}
+                  end={statsData.currentBalance}
                   separator=","
                   duration={1}
                 />
@@ -86,8 +69,8 @@ const Stats: React.FC = () => {
                 Income
               </div>
               <div style={{ color: "#45bcf3", fontSize: "24px" }}>
-                <RiseOutlined style={{ marginRight: "5px" }} /> Rs.
-                <CountUp end={stats.monthlyIncome} separator="," duration={1} />
+                <RiseOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
+                <CountUp end={statsData.monthlyIncome} separator="," duration={1} />
               </div>
             </div>
           </Card>
@@ -106,9 +89,9 @@ const Stats: React.FC = () => {
                 Expenses
               </div>
               <div style={{ color: "#f34545", fontSize: "24px" }}>
-                <FallOutlined style={{ marginRight: "5px" }} /> Rs.
+                <FallOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
                 <CountUp
-                  end={stats.monthlyExpenses}
+                  end={statsData.monthlyExpenses}
                   separator=","
                   duration={1}
                 />
@@ -131,13 +114,13 @@ const Stats: React.FC = () => {
               </div>
               <div
                 style={{
-                  color: stats.budgetUtilization <= 75 ? "#cdf345" : "#f34545",
+                  color: statsData.budgetUtilization <= 75 ? "#cdf345" : "#f34545",
                   fontSize: "24px",
                 }}
               >
                 <BankOutlined style={{ marginRight: "5px" }} />
                 <CountUp
-                  end={stats.budgetUtilization}
+                  end={statsData.budgetUtilization}
                   decimals={1}
                   duration={1}
                 />

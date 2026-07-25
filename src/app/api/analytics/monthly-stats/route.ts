@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/app/lib/dbConnect";
 import Transaction from "@/app/models/Transaction";
 import Category from "@/app/models/Category";
+import User from "@/app/models/User";
 import dayjs from "dayjs";
 
 export async function GET() {
@@ -16,7 +17,7 @@ export async function GET() {
 
         const startOfMonth = dayjs().startOf("month").toDate().toISOString();
 
-        // Get monthly transactions and all transactions, plus categories
+        // Get monthly transactions and all transactions, plus user data
         const monthlyTransactions = await Transaction.find({
             userId: session.user.userId,
             date: { $gte: startOfMonth },
@@ -25,8 +26,7 @@ export async function GET() {
         const allTransactions = await Transaction.find({
             userId: session.user.userId,
         });
-
-        const categories = await Category.find({
+        const user = await User.findOne({
             userId: session.user.userId
         });
 
@@ -39,12 +39,16 @@ export async function GET() {
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
 
-        // Calculate total budget across all categories
-        const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
+        // Get user's monthly budget
+        
+        const monthlyBudget = Number(user?.monthlyBudget) || 0;
 
-        // Calculate budget utilization percentage
-        const budgetUtilization = totalBudget > 0 
-            ? (monthlyExpenses / totalBudget) * 100 
+        console.log('Monthly Expenses:', monthlyExpenses);
+        console.log('Monthly Budget:', monthlyBudget);
+
+        // Calculate budget utilization percentage (0 if budget is 0)
+        const budgetUtilization = monthlyBudget > 0 
+            ? (monthlyExpenses / monthlyBudget) * 100 
             : 0;
 
         // Calculate current balance as net amount of all time (income - expenses)

@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DebtCard from "../DebtCard/DebtCard";
-import { Segmented, message } from "antd";
+import { Segmented } from "antd";
 import LoadingSkeleton from "../HelperComponents/LoadingSkeleton";
 import NoTransactions from "../HelperComponents/NoTransactions";
+import { useDebts } from '@/hooks/useApi';
 
 interface DebtTransaction {
   _id: string;
@@ -14,7 +15,7 @@ interface DebtTransaction {
   category?: string;
 }
 
-interface Debt {
+interface DebtWithDetails {
   _id: string;
   title: string;
   totalAmount: number;
@@ -26,41 +27,32 @@ interface Debt {
 }
 
 const DebtGrid: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [debts, setDebts] = useState<Debt[]>([]);
   const [filter, setFilter] = useState<"Debt" | "Credit" | "History">("Debt");
-
-  const fetchDebts = async () => {
-    try {
-      setLoading(true);
-      let url = "/api/debts?";
-
-      if (filter === "Debt") {
-        url += "debtType=taken&status=active";
-      } else if (filter === "Credit") {
-        url += "debtType=given&status=active";
-      } else if (filter === "History") {
-        url += "status=completed";
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch debts");
-      }
-
-      const data = await response.json();
-      setDebts(data.debts);
-    } catch (error) {
-      console.error("Error fetching debts:", error);
-      message.error("Failed to load debts");
-    } finally {
-      setLoading(false);
+  
+  // Build query parameters based on filter
+  const getQueryParams = () => {
+    if (filter === "Debt") {
+      return { debtType: 'taken', status: 'active' };
+    } else if (filter === "Credit") {
+      return { debtType: 'given', status: 'active' };
+    } else {
+      return { status: 'completed' };
     }
   };
-
-  useEffect(() => {
-    fetchDebts();
-  }, [filter]);
+  
+  const { data, isLoading: loading, refetch } = useDebts();
+  
+  // Filter debts based on current filter
+  const debts = React.useMemo(() => {
+    if (!data?.debts) return [];
+    const params = getQueryParams();
+    return data.debts.filter((debt: any) => {
+      if (params.debtType && debt.debtType !== params.debtType) return false;
+      if (params.status === 'active' && debt.amountRemaining <= 0) return false;
+      if (params.status === 'completed' && debt.amountRemaining > 0) return false;
+      return true;
+    });
+  }, [data, filter]);
 
   const handleFilterChange = (value: "Debt" | "Credit" | "History") => {
     setFilter(value);
@@ -92,7 +84,15 @@ const DebtGrid: React.FC = () => {
             <LoadingSkeleton type="debt" quantity={3} />
           </>
         ) : debts.length === 0 ? (
-          <NoTransactions />
+          <NoTransactions
+            message={
+              filter === "Credit"
+                ? "You have no Credits pending"
+                : filter === "Debt"
+                ? "You have no Debts pending"
+                : "You have no Debt History"
+            }
+          />
         ) : (
           <>
             {debts.map((debt, index) => (
@@ -105,8 +105,8 @@ const DebtGrid: React.FC = () => {
                 amountRemaining={debt.amountRemaining}
                 date={debt.date}
                 debtType={debt.debtType}
-                transactions={debt.transactions}
-                onRefresh={fetchDebts}
+                transactions={debt.transactions || []}
+                onRefresh={refetch}
               />
             ))}
           </>

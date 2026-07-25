@@ -4,6 +4,7 @@ import Navbar from "../Navbar/Navbar";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { App } from "antd";
+import TransactionModal from "../Modals/TransactionModal/TransactionModal";
 
 export default function MainLayout({
   children,
@@ -28,6 +29,7 @@ export default function MainLayout({
       <App>
         <Navbar />
         <main className="main">{children}</main>
+        <TransactionModal />
       </App>
     </>
   );

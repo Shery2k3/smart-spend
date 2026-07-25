@@ -1,6 +1,8 @@
 "use client";
-import { Card, Col, Divider, Flex, Row, Skeleton, message } from "antd";
-import { useEffect, useState } from "react";
+import { Card, Col, Divider, Flex, Row, Skeleton } from "antd";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
+import { useDebtPayments } from '@/hooks/useApi';
 
 interface DebtSummary {
   outstandingDebt: number;
@@ -10,34 +12,15 @@ interface DebtSummary {
 }
 
 const DebtSummaryCard = () => {
-  const [loading, setLoading] = useState(true);
-  const [debtSummary, setDebtSummary] = useState<DebtSummary>({
+  const { currency } = useCurrency();
+  const { data: debtSummary, isLoading: loading } = useDebtPayments();
+
+  const summary = debtSummary || {
     outstandingDebt: 0,
     outstandingCredit: 0,
     takenCount: 0,
     givenCount: 0,
-  });
-
-  useEffect(() => {
-    const fetchDebtSummary = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/debt-payments");
-        if (!response.ok) {
-          throw new Error("Failed to fetch debt summary");
-        }
-        const data = await response.json();
-        setDebtSummary(data);
-      } catch (error) {
-        console.error("Error fetching debt summary:", error);
-        message.error("Failed to load debt summary");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDebtSummary();
-  }, []);
+  };
 
   const LoadingSkeleton = () => (
     <Card bordered={false} style={{ width: "100%" }}>
@@ -55,7 +38,7 @@ const DebtSummaryCard = () => {
             <Col span={11}>
               <Flex vertical align="center" justify="center" gap={8}>
                 <p style={{ opacity: 0.75 }}>Outstanding Debt</p>
-                <h3>Rs. {debtSummary.outstandingDebt}</h3>
+                <h3>{getCurrencySymbol(currency)} {summary.outstandingDebt}</h3>
               </Flex>
             </Col>
             <Col span={2}>
@@ -71,7 +54,7 @@ const DebtSummaryCard = () => {
             <Col span={11}>
               <Flex vertical align="center" justify="center" gap={8}>
                 <p style={{ opacity: 0.75 }}>Outstanding Credit</p>
-                <h3>Rs. {debtSummary.outstandingCredit}</h3>
+                <h3>{getCurrencySymbol(currency)} {summary.outstandingCredit}</h3>
               </Flex>
             </Col>
           </Row>

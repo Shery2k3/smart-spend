@@ -1,6 +1,6 @@
 import { Card } from "antd";
 
-const NoTransactions = () => (
+const NoTransactions = ({ message = "No Recent Transactions" }) => (
   <Card bordered={false} style={{ width: "100%" }}>
     <div
       style={{
@@ -23,7 +23,7 @@ const NoTransactions = () => (
           fontWeight: 500,
         }}
       >
-        No Recent Transactions
+        {message}
       </p>
     </div>
   </Card>

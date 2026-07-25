@@ -8,6 +8,7 @@ export interface IDebtTransaction {
     notes?: string;
     reason?: string;
     category?: string;
+    transactionId?: string; // Reference to Transaction collection
 }
 
 export interface IDebt {
@@ -39,7 +40,8 @@ const debtTransactionSchema = new Schema<IDebtTransaction>({
     },
     notes: String,
     reason: String,
-    category: String
+    category: String,
+    transactionId: String
 });
 
 const debtSchema = new Schema<IDebt>({

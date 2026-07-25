@@ -5,7 +5,8 @@ import TransactionModal from "../Modals/TransactionModal/TransactionModal";
 import dayjs from "dayjs";
 import type { MenuProps } from "antd";
 import ViewNotesButton from "../Modals/ViewNotesModal/ViewNotesModal";
-import { formatNumber } from '../../utils/formatCurrency';
+import { formatNumber, getCurrencySymbol } from '../../utils/formatCurrency';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface RecentTransactionCardProps {
   _id: string;
@@ -30,6 +31,7 @@ const RecentTransactionCard: React.FC<RecentTransactionCardProps> = ({
   notes,
   onTransactionChange,
 }) => {
+  const { currency } = useCurrency();
   const isExpense = type === "expense";
 
   const items: MenuProps["items"] = [
@@ -95,7 +97,7 @@ const RecentTransactionCard: React.FC<RecentTransactionCardProps> = ({
             }}
           >
             <span>
-              {isExpense ? "- " : "+ "}Rs. {formatNumber(amount)}
+              {isExpense ? "- " : "+ "}{getCurrencySymbol(currency)} {formatNumber(amount)}
             </span>
           </Tag>
           <Dropdown

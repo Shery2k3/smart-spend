@@ -1,7 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { Button, Modal, message } from "antd";
+import { Button, Modal } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
+import { useCurrency } from '@/hooks/useCurrency';
+import { getCurrencySymbol } from '@/utils/formatCurrency';
+import { useDeleteCategory } from '@/hooks/useApi';
 
 interface CategoryData {
   _id: string;
@@ -19,36 +22,20 @@ const DeleteCategoryButton: React.FC<DeleteCategoryButtonProps> = ({
   category,
   onClose,
 }) => {
+  const { currency } = useCurrency();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const deleteCategory = useDeleteCategory();
 
   const handleDelete = () => {
     setDeleteModalVisible(true);
   };
 
   const confirmDelete = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/category?id=${category._id}`, {
-        method: "DELETE",
-      });
+    await deleteCategory.mutateAsync(category._id);
+    setDeleteModalVisible(false);
 
-      if (!response.ok) {
-        throw new Error("Failed to delete category");
-      }
-
-      message.success("Category deleted successfully");
-
-      setDeleteModalVisible(false);
-
-      if (onClose) {
-        onClose();
-      }
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      message.error("Failed to delete category");
-    } finally {
-      setLoading(false);
+    if (onClose) {
+      onClose();
     }
   };
 
@@ -68,7 +55,7 @@ const DeleteCategoryButton: React.FC<DeleteCategoryButtonProps> = ({
         onCancel={() => setDeleteModalVisible(false)}
         okText="Delete"
         cancelText="Cancel"
-        okButtonProps={{ danger: true, loading: loading }}
+        okButtonProps={{ danger: true, loading: deleteCategory.isPending }}
         width={400}
         centered
       >
@@ -78,7 +65,7 @@ const DeleteCategoryButton: React.FC<DeleteCategoryButtonProps> = ({
             <strong>Category:</strong> {category.categoryName}
           </p>
           <p>
-            <strong>Budget:</strong> Rs.{category.budget.toFixed(2)}
+            <strong>Budget:</strong> {getCurrencySymbol(currency)}{category.budget.toFixed(2)}
           </p>
         </div>
       </Modal>

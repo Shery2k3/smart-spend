@@ -7,6 +7,7 @@ interface IUser {
   password?: string;
   image?: string;
   currency: string;
+  monthlyBudget: number;
 }
 
 const userSchema = new Schema<IUser>({
@@ -15,7 +16,8 @@ const userSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
   password: { type: String, select: false }, 
   image: { type: String },
-  currency: { type: String, default: 'USD' }
+  currency: { type: String, default: 'USD' },
+  monthlyBudget: { type: Number, default: 0 }
 });
 
 export default models.User || model<IUser>('User', userSchema);

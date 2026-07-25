@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
 import CategoryCard from "../CategoryCard/CategoryCard";
 import CategoryModal from "../Modals/CategoryModal/CategoryModal";
-import { Card, message, Skeleton } from "antd";
+import { Card, message } from "antd";
 import LoadingSkeleton from "../HelperComponents/LoadingSkeleton";
+import { useCategories } from "@/hooks/useApi";
 
 interface Category {
   _id: string;
@@ -15,31 +15,7 @@ interface Category {
 }
 
 const CategoryGrid = () => {
-  const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/category");
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories");
-      }
-      const data = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      message.error("Failed to fetch categories");
-    } finally {
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
-    }
-  };
+  const { data: categories = [], isLoading, refetch } = useCategories();
 
   return (
     <div
@@ -53,7 +29,7 @@ const CategoryGrid = () => {
         width: "100%",
       }}
     >
-      {loading ? (
+      {isLoading ? (
         <>
           <LoadingSkeleton type="debt" quantity={3} />
         </>
@@ -68,10 +44,10 @@ const CategoryGrid = () => {
               budget={category.budget}
               transactionCount={category.transactionCount}
               color={category.color}
-              onSuccess={fetchCategories}
+              onSuccess={refetch}
             />
           ))}
-          <CategoryModal onSuccess={fetchCategories} />
+          <CategoryModal onSuccess={refetch} />
         </>
       )}
     </div>

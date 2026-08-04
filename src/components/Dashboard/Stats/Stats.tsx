@@ -5,17 +5,23 @@ import {
   RiseOutlined,
   FallOutlined,
   BankOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import CountUp from "react-countup";
-import { useCurrency } from '@/hooks/useCurrency';
-import { getCurrencySymbol } from '@/utils/formatCurrency';
-import { useMonthlyStats } from '@/hooks/useApi';
+import { useCurrency } from "@/hooks/useCurrency";
+import { getCurrencySymbol } from "@/utils/formatCurrency";
+import { useMonthlyStats } from "@/hooks/useApi";
 
 interface StatsData {
   currentBalance: number;
   monthlyIncome: number;
   monthlyExpenses: number;
   budgetUtilization: number;
+  amountOwedToYou: number;
+  amountYouOwe: number;
+  netDebtPosition: number;
 }
 
 const Stats: React.FC = () => {
@@ -27,6 +33,9 @@ const Stats: React.FC = () => {
     monthlyIncome: 0,
     monthlyExpenses: 0,
     budgetUtilization: 0,
+    amountOwedToYou: 0,
+    amountYouOwe: 0,
+    netDebtPosition: 0,
   };
 
   return (
@@ -45,7 +54,8 @@ const Stats: React.FC = () => {
                 Current Balance
               </div>
               <div style={{ color: "#cdf345", fontSize: "24px" }}>
-                <WalletOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
+                <WalletOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
                 <CountUp
                   end={statsData.currentBalance}
                   separator=","
@@ -69,8 +79,13 @@ const Stats: React.FC = () => {
                 Income
               </div>
               <div style={{ color: "#45bcf3", fontSize: "24px" }}>
-                <RiseOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
-                <CountUp end={statsData.monthlyIncome} separator="," duration={1} />
+                <RiseOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
+                <CountUp
+                  end={statsData.monthlyIncome}
+                  separator=","
+                  duration={1}
+                />
               </div>
             </div>
           </Card>
@@ -89,7 +104,8 @@ const Stats: React.FC = () => {
                 Expenses
               </div>
               <div style={{ color: "#f34545", fontSize: "24px" }}>
-                <FallOutlined style={{ marginRight: "5px" }} /> {getCurrencySymbol(currency)}
+                <FallOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
                 <CountUp
                   end={statsData.monthlyExpenses}
                   separator=","
@@ -114,7 +130,8 @@ const Stats: React.FC = () => {
               </div>
               <div
                 style={{
-                  color: statsData.budgetUtilization <= 75 ? "#cdf345" : "#f34545",
+                  color:
+                    statsData.budgetUtilization <= 75 ? "#cdf345" : "#f34545",
                   fontSize: "24px",
                 }}
               >
@@ -125,6 +142,86 @@ const Stats: React.FC = () => {
                   duration={1}
                 />
                 %
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={8}>
+          <Card bordered={false} loading={loading} style={{ height: "100%" }}>
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "#8c8c8c",
+                  textTransform: "uppercase",
+                }}
+              >
+                Owed To You
+              </div>
+              <div style={{ color: "#45bcf3", fontSize: "24px" }}>
+                <ArrowDownOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
+                <CountUp
+                  end={statsData.amountOwedToYou}
+                  separator=","
+                  duration={1}
+                />
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={12} sm={12} lg={8}>
+          <Card bordered={false} loading={loading} style={{ height: "100%" }}>
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "#8c8c8c",
+                  textTransform: "uppercase",
+                }}
+              >
+                You Owe
+              </div>
+              <div style={{ color: "#f34545", fontSize: "24px" }}>
+                <ArrowUpOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
+                <CountUp
+                  end={statsData.amountYouOwe}
+                  separator=","
+                  duration={1}
+                />
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={12} sm={12} lg={8}>
+          <Card bordered={false} loading={loading} style={{ height: "100%" }}>
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "#8c8c8c",
+                  textTransform: "uppercase",
+                }}
+              >
+                Net Debt Position
+              </div>
+              <div
+                style={{
+                  color: statsData.netDebtPosition >= 0 ? "#cdf345" : "#f34545",
+                  fontSize: "24px",
+                }}
+              >
+                <SwapOutlined style={{ marginRight: "5px" }} />{" "}
+                {getCurrencySymbol(currency)}
+                <CountUp
+                  end={statsData.netDebtPosition}
+                  separator=","
+                  duration={1}
+                />
               </div>
             </div>
           </Card>

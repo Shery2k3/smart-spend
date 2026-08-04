@@ -1,6 +1,8 @@
 "use client";
 import CategoryBreakdown from "@/components/Dashboard/CategoryBreakdown/CategoryBreakdown";
 import MonthlyBalanceTrend from "@/components/Dashboard/MonthlyBalanceTrend/MonthlyBalanceTrend";
+import DailyExpenditureTrend from "@/components/Dashboard/DailyExpenditureTrend/DailyExpenditureTrend";
+import ExpenditureHeatmap from "@/components/Dashboard/ExpenditureHeatmap/ExpenditureHeatmap";
 import Stats from "@/components/Dashboard/Stats/Stats";
 import MainLayout from "@/components/MainLayout/MainLayout";
 import { useSession } from "next-auth/react";
@@ -32,6 +34,16 @@ export default function Dashboard() {
             <CategoryBreakdown />
           </Col>
         </Row>
+        <Row gutter={[8, 8]} style={{ marginTop: 8 }}>
+          <Col xs={24}>
+            <DailyExpenditureTrend />
+          </Col>
+        </Row>
+        {/* <Row gutter={[8, 8]} style={{ marginTop: 8 }}>
+          <Col xs={24}>
+            <ExpenditureHeatmap />
+          </Col>
+        </Row> */}
       </div>
       <RecentTransaction />
     </MainLayout>

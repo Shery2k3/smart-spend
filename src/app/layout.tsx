@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ConfigProvider, theme } from "antd";
 import { Poppins } from "next/font/google";
 import "@ant-design/v5-patch-for-react-19";
@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import Loader from "@/components/Loaders/FullPageLoader/Loader";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { QueryProvider } from "@/providers/QueryProvider";
+import SyncProvider from "@/components/SyncProvider/SyncProvider";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -15,9 +16,14 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#1e1e1f",
+};
+
 export const metadata: Metadata = {
   title: "SmartSpend - Expense & Income Tracker",
   description: "Track your expenses and incomes with ease.",
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
@@ -77,11 +83,11 @@ export default async function RootLayout({
                 itemColor: "rgba(255,255,255,0.65)",
               },
               Message: {
-                contentBg: "#1e1e1f",         
-                colorError: "#f34545",       
-                colorInfo: "#579cfd",      
-                colorText: "#ffffff", 
-                colorSuccess: "#cdf345 61.20%)"    
+                contentBg: "#1e1e1f",
+                colorError: "#f34545",
+                colorInfo: "#579cfd",
+                colorText: "#ffffff",
+                colorSuccess: "#cdf345 61.20%)",
               },
               Button: {
                 primaryColor: "#000",
@@ -95,8 +101,10 @@ export default async function RootLayout({
           <SessionProvider session={session}>
             <QueryProvider>
               <CurrencyProvider>
-                <Loader />
-                {children}
+                <SyncProvider>
+                  <Loader />
+                  {children}
+                </SyncProvider>
               </CurrencyProvider>
             </QueryProvider>
           </SessionProvider>

@@ -1,18 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { message } from 'antd';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { message } from "antd";
 
 // Query Keys
 export const QUERY_KEYS = {
-  transactions: (page?: number, pageSize?: number, type?: string) => 
-    ['transactions', { page, pageSize, type }] as const,
-  categories: ['categories'] as const,
-  debts: (page?: number, pageSize?: number) => ['debts', { page, pageSize }] as const,
-  debtPayments: ['debtPayments'] as const,
-  user: (userId: string) => ['user', userId] as const,
-  monthlyStats: ['monthlyStats'] as const,
-  monthlyBalance: ['monthlyBalance'] as const,
-  statement: (startDate: string, endDate: string) => 
-    ['statement', { startDate, endDate }] as const,
+  transactions: (page?: number, pageSize?: number, type?: string) =>
+    ["transactions", { page, pageSize, type }] as const,
+  categories: ["categories"] as const,
+  debts: (page?: number, pageSize?: number) =>
+    ["debts", { page, pageSize }] as const,
+  debtPayments: ["debtPayments"] as const,
+  user: (userId: string) => ["user", userId] as const,
+  monthlyStats: ["monthlyStats"] as const,
+  monthlyBalance: ["monthlyBalance"] as const,
+  dailyExpenditure: (range: "30d" | "year" = "30d") =>
+    ["dailyExpenditure", { range }] as const,
+  statement: (startDate: string, endDate: string) =>
+    ["statement", { startDate, endDate }] as const,
 };
 
 // Types
@@ -79,60 +82,70 @@ interface DebtsResponse {
 const fetchTransactions = async (
   page: number = 1,
   pageSize: number = 10,
-  type?: string
+  type?: string,
 ): Promise<TransactionsResponse> => {
   let url = `/api/transactions?page=${page}&pageSize=${pageSize}`;
-  if (type && type !== 'All') {
+  if (type && type !== "All") {
     url += `&type=${type.toLowerCase()}`;
   }
-  
+
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Failed to fetch transactions');
+    throw new Error("Failed to fetch transactions");
   }
   return response.json();
 };
 
 const fetchCategories = async (): Promise<Category[]> => {
-  const response = await fetch('/api/category');
+  const response = await fetch("/api/category");
   if (!response.ok) {
-    throw new Error('Failed to fetch categories');
+    throw new Error("Failed to fetch categories");
   }
   return response.json();
 };
 
 const fetchDebts = async (
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
 ): Promise<DebtsResponse> => {
   const url = `/api/debts?page=${page}&pageSize=${pageSize}`;
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Failed to fetch debts');
+    throw new Error("Failed to fetch debts");
   }
   return response.json();
 };
 
 const fetchDebtPayments = async () => {
-  const response = await fetch('/api/debt-payments');
+  const response = await fetch("/api/debt-payments");
   if (!response.ok) {
-    throw new Error('Failed to fetch debt payments');
+    throw new Error("Failed to fetch debt payments");
   }
   return response.json();
 };
 
 const fetchMonthlyStats = async () => {
-  const response = await fetch('/api/analytics/monthly-stats');
+  const response = await fetch("/api/analytics/monthly-stats");
   if (!response.ok) {
-    throw new Error('Failed to fetch monthly stats');
+    throw new Error("Failed to fetch monthly stats");
   }
   return response.json();
 };
 
 const fetchMonthlyBalance = async () => {
-  const response = await fetch('/api/analytics/monthly-balance');
+  const response = await fetch("/api/analytics/monthly-balance");
   if (!response.ok) {
-    throw new Error('Failed to fetch monthly balance');
+    throw new Error("Failed to fetch monthly balance");
+  }
+  return response.json();
+};
+
+const fetchDailyExpenditure = async (range: "30d" | "year" = "30d") => {
+  const response = await fetch(
+    `/api/analytics/daily-expenditure?range=${range}`,
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch daily expenditure");
   }
   return response.json();
 };
@@ -140,17 +153,17 @@ const fetchMonthlyBalance = async () => {
 const fetchUser = async (userId: string) => {
   const response = await fetch(`/api/users?userId=${userId}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch user');
+    throw new Error("Failed to fetch user");
   }
   return response.json();
 };
 
 const fetchStatement = async (startDate: string, endDate: string) => {
   const response = await fetch(
-    `/api/transactions/statement?startDate=${startDate}&endDate=${endDate}`
+    `/api/transactions/statement?startDate=${startDate}&endDate=${endDate}`,
   );
   if (!response.ok) {
-    throw new Error('Failed to fetch statement');
+    throw new Error("Failed to fetch statement");
   }
   return response.json();
 };
@@ -159,7 +172,7 @@ const fetchStatement = async (startDate: string, endDate: string) => {
 export const useTransactions = (
   page: number = 1,
   pageSize: number = 10,
-  type?: string
+  type?: string,
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.transactions(page, pageSize, type),
@@ -202,6 +215,13 @@ export const useMonthlyBalance = () => {
   });
 };
 
+export const useDailyExpenditure = (range: "30d" | "year" = "30d") => {
+  return useQuery({
+    queryKey: QUERY_KEYS.dailyExpenditure(range),
+    queryFn: () => fetchDailyExpenditure(range),
+  });
+};
+
 export const useUser = (userId: string) => {
   return useQuery({
     queryKey: QUERY_KEYS.user(userId),
@@ -224,30 +244,31 @@ export const useCreateTransaction = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<Transaction>) => {
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
+      const response = await fetch("/api/transactions", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create transaction');
+        throw new Error("Failed to create transaction");
       }
 
       return response.json();
     },
     onSuccess: () => {
       // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Transaction added successfully');
+      message.success("Transaction added successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -257,29 +278,30 @@ export const useUpdateTransaction = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<Transaction> & { _id: string }) => {
-      const response = await fetch('/api/transactions', {
-        method: 'PUT',
+      const response = await fetch("/api/transactions", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update transaction');
+        throw new Error("Failed to update transaction");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Transaction updated successfully');
+      message.success("Transaction updated successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -290,24 +312,25 @@ export const useDeleteTransaction = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/transactions?id=${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete transaction');
+        throw new Error("Failed to delete transaction");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Transaction deleted successfully');
+      message.success("Transaction deleted successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'Failed to delete transaction');
+      message.error(error.message || "Failed to delete transaction");
     },
   });
 };
@@ -317,26 +340,26 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<Category>) => {
-      const response = await fetch('/api/category', {
-        method: 'POST',
+      const response = await fetch("/api/category", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create category');
+        throw new Error("Failed to create category");
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Category created successfully');
+      message.success("Category created successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -346,26 +369,26 @@ export const useUpdateCategory = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<Category> & { _id: string }) => {
-      const response = await fetch('/api/category', {
-        method: 'PUT',
+      const response = await fetch("/api/category", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update category');
+        throw new Error("Failed to update category");
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Category updated successfully');
+      message.success("Category updated successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -376,21 +399,21 @@ export const useDeleteCategory = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/category?id=${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete category');
+        throw new Error("Failed to delete category");
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Category deleted successfully');
+      message.success("Category deleted successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'Failed to delete category');
+      message.error(error.message || "Failed to delete category");
     },
   });
 };
@@ -400,31 +423,32 @@ export const useCreateDebt = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<Debt>) => {
-      const response = await fetch('/api/debts', {
-        method: 'POST',
+      const response = await fetch("/api/debts", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create debt');
+        throw new Error("Failed to create debt");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.debtPayments });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Debt added successfully');
+      message.success("Debt added successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -435,26 +459,26 @@ export const useUpdateDebt = () => {
   return useMutation({
     mutationFn: async (data: Partial<Debt> & { _id: string }) => {
       const response = await fetch(`/api/debts?id=${data._id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update debt');
+        throw new Error("Failed to update debt");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.debtPayments });
-      message.success('Debt updated successfully');
+      message.success("Debt updated successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -465,26 +489,27 @@ export const useDeleteDebt = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/debts?id=${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete debt');
+        throw new Error("Failed to delete debt");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.debtPayments });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Debt deleted successfully');
+      message.success("Debt deleted successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'Failed to delete debt');
+      message.error(error.message || "Failed to delete debt");
     },
   });
 };
@@ -494,33 +519,35 @@ export const useCreateDebtPayment = () => {
 
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch('/api/debt-payments', {
-        method: 'POST',
+      const response = await fetch("/api/debt-payments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create debt payment');
+        throw new Error("Failed to create debt payment");
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.debtPayments });
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Debt payment added successfully');
+      message.success("Debt payment added successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
@@ -531,32 +558,34 @@ export const useUpdateDebtPayment = () => {
   return useMutation({
     mutationFn: async (data: any & { _id: string }) => {
       const response = await fetch(`/api/debt-payments/${data._id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update debt payment');
+        throw new Error("Failed to update debt payment");
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.debtPayments });
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyStats });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlyBalance });
+      queryClient.invalidateQueries({ queryKey: ["dailyExpenditure"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      message.success('Debt payment updated successfully');
+      message.success("Debt payment updated successfully");
     },
     onError: (error: Error) => {
-      message.error(error.message || 'An error occurred');
+      message.error(error.message || "An error occurred");
     },
   });
 };
